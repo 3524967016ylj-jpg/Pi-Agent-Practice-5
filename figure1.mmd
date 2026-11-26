@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant S as 交互与会话层
+    participant A as Agent 执行层
+    participant M as 模型请求层
+    participant R as read 工具
+    U->>S: 提交“请用 read 工具读取 handoff.txt…”
+    Note over S: interactive-mode.ts onSubmit / onInputCallback<br/>AgentSession.prompt() → _startRun()
+    S->>A: Agent.prompt(messages)
+    Note over A: agent.ts runPromptMessages()<br/>→ agent-loop.ts runAgentLoop()
+    A->>M: streamAssistantResponse() → streamFunction(model, llmContext)
+    Note over M: 模型适配器向远端模型发送请求
+    M-->>A: 远端响应：read 工具调用
+    A->>R: executeToolCalls() → executePreparedToolCall() → read.execute()
+    Note over R: resolveReadPathAsync() → selectLinesFromStream()<br/>readLocalFileChunks() → FileHandle.createReadStream()
+    R-->>A: handoff.txt 文本／toolResult
+    Note over A: toolResult 加入 currentContext.messages<br/>[P4] 工具结果已加入上下文
+    A->>M: 下一轮 streamAssistantResponse()，带工具结果
+    M-->>A: 远端响应：待办与完整启动命令
+    A-->>S: message_update / message_end
+    Note over S: AgentSession 订阅事件并 appendMessage() 持久化<br/>interactive-mode.ts 更新 streamingComponent
+    S-->>U: 屏幕显示回复

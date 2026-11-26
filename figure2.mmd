@@ -1,0 +1,18 @@
+flowchart LR
+    A["A 阶段结束：Pi 已读到并回答完整启动命令"]
+    A --> B["退出后以 -c 重新启动"]
+    A --> C["在原进程输入 /new"]
+    subgraph OLD[旧会话恢复]
+      B --> D["continueRecent 找到最近 JSONL 会话文件"]
+      D --> E["_setSessionFile / loadEntriesFromFile 恢复消息"]
+      E --> F["同一提问：起草 README 启动说明"]
+      F --> G["历史消息 + 本次提问用于模型请求"]
+      G --> H["回答包含 cedar-428；未观察到工具调用"]
+    end
+    subgraph NEW[新会话]
+      C --> I["AgentSessionRuntime.newSession 创建新会话"]
+      I --> J["消息历史为空，没有 A 的命令"]
+      J --> K["输入完全相同的提问"]
+      K --> L["本次提问用于模型请求"]
+      L --> N["回答缺少命令；未观察到工具调用"]
+    end
